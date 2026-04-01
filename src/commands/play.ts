@@ -43,9 +43,19 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
     if (yt[0]) tracks.push({ title: yt[0].title!, url: yt[0].url! });
   } else if (query.startsWith('http://') || query.startsWith('https://')) {
     const normalizedUrl = query.replace('music.youtube.com', 'www.youtube.com');
+    const isPlaylist = normalizedUrl.includes('list=') || normalizedUrl.includes('/playlist');
     try {
-      const info = await youtubeDl(normalizedUrl, { dumpSingleJson: true, noWarnings: true, noPlaylist: true }) as { title?: string };
-      tracks.push({ title: info.title ?? normalizedUrl, url: normalizedUrl });
+      if (isPlaylist) {
+        type Entry = { title?: string; url?: string; webpage_url?: string };
+        const info = await youtubeDl(normalizedUrl, { dumpSingleJson: true, noWarnings: true, flatPlaylist: true, yesPlaylist: true }) as { entries?: Entry[] };
+        for (const entry of info.entries ?? []) {
+          const url = entry.webpage_url ?? entry.url;
+          if (url) tracks.push({ title: entry.title ?? url, url });
+        }
+      } else {
+        const info = await youtubeDl(normalizedUrl, { dumpSingleJson: true, noWarnings: true, noPlaylist: true }) as { title?: string };
+        tracks.push({ title: info.title ?? normalizedUrl, url: normalizedUrl });
+      }
     } catch {
       return interaction.editReply('Could not load that URL');
     }
@@ -60,7 +70,7 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
 
   queue.tracks.push(...tracks);
 
-  await interaction.editReply(`Added to queue`);
+  await interaction.editReply(tracks.length === 1 ? `Added **${tracks[0]!.title}** to queue` : `Added **${tracks.length} tracks** to queue`);
 
   if (!queue.playing) {
     playNext(interaction.guildId!).catch(console.error);
