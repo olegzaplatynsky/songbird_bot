@@ -5,7 +5,7 @@ import { youtubeDl } from 'youtube-dl-exec';
 import { queues } from '../music/queue.js';
 import { createPlayer, playNext } from '../music/player.js';
 
-export async function playCommand(interaction: ChatInputCommandInteraction) {
+export async function playNextCommand(interaction: ChatInputCommandInteraction) {
   const query = interaction.options.getString('query', true);
   const member = interaction.member as any;
 
@@ -32,8 +32,8 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
     queues.set(interaction.guildId!, queue);
   }
 
-  // Resolve Spotify/YouTube
-  let tracks = [];
+  // Resolve tracks (same logic as /play)
+  let tracks: { title: string; url: string }[] = [];
 
   if (play.sp_validate(query) !== false) {
     const spData = await play.spotify(query);
@@ -68,9 +68,15 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
     return interaction.editReply('No results found');
   }
 
-  queue.tracks.push(...tracks);
+  // Insert right after the current track (index 0) so it plays next.
+  // If the queue is empty this is equivalent to a normal push.
+  queue.tracks.splice(1, 0, ...tracks);
 
-  await interaction.editReply(tracks.length === 1 ? `Added **${tracks[0]!.title}** to queue` : `Added **${tracks.length} tracks** to queue`);
+  await interaction.editReply(
+    tracks.length === 1
+      ? `**${tracks[0]!.title}** will play next`
+      : `**${tracks.length} tracks** will play next`,
+  );
 
   if (!queue.playing) {
     playNext(interaction.guildId!).catch(console.error);

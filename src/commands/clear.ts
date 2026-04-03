@@ -5,5 +5,9 @@ export function clearCommand(interaction: any) {
   if (!queue) return interaction.reply('Queue empty');
 
   queue.tracks = [];
+  queue.loop = false;
+  queue.skipHandled = true;
+  queue.player.stop();
+
   interaction.reply('Queue cleared');
 }
