@@ -5,7 +5,7 @@ import { youtubeDl } from 'youtube-dl-exec';
 import { queues } from '../music/queue.js';
 import { createPlayer, playNext } from '../music/player.js';
 
-export async function playNextCommand(interaction: ChatInputCommandInteraction) {
+export async function playShuffleCommand(interaction: ChatInputCommandInteraction) {
   const query = interaction.options.getString('query', true);
   const member = interaction.member as any;
 
@@ -32,7 +32,7 @@ export async function playNextCommand(interaction: ChatInputCommandInteraction) 
     queues.set(interaction.guildId!, queue);
   }
 
-  // Resolve tracks (same logic as /play)
+  // Resolve tracks
   let tracks: { title: string; url: string }[] = [];
 
   const spType = play.sp_validate(query);
@@ -82,14 +82,19 @@ export async function playNextCommand(interaction: ChatInputCommandInteraction) 
     return interaction.editReply('No results found');
   }
 
-  // Insert right after the current track (index 0) so it plays next.
-  // If the queue is empty this is equivalent to a normal push.
-  queue.tracks.splice(1, 0, ...tracks);
+  // Shuffle only the newly resolved tracks (Fisher-Yates).
+  // The existing queue is left untouched.
+  for (let i = tracks.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tracks[i], tracks[j]] = [tracks[j]!, tracks[i]!];
+  }
+
+  queue.tracks.push(...tracks);
 
   await interaction.editReply(
     tracks.length === 1
-      ? `**${tracks[0]!.title}** will play next`
-      : `**${tracks.length} tracks** will play next`,
+      ? `Added **${tracks[0]!.title}** to queue`
+      : `Added **${tracks.length} tracks** (shuffled) to queue`,
   );
 
   if (!queue.playing) {

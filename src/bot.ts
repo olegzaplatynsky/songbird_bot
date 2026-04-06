@@ -10,6 +10,9 @@ import { queueCommand } from './commands/queue.js';
 import { shuffleCommand } from './commands/shuffle.js';
 import { continueCommand } from './commands/continue.js';
 import { playNextCommand } from './commands/playnext.js';
+import { playShuffleCommand } from './commands/playshuffle.js';
+import { helpCommand } from './commands/help.js';
+// import play from 'play-dl';
 
 const commands = [
   {
@@ -30,6 +33,12 @@ const commands = [
     description: 'Add a track to play right after the current one',
     options: [{ name: 'query', type: 3, required: true, description: 'Search query or URL' }],
   },
+  {
+    name: 'playshuffle',
+    description: 'Add tracks shuffled to the end of the queue',
+    options: [{ name: 'query', type: 3, required: true, description: 'Search query or URL' }],
+  },
+  { name: 'help', description: 'Show all available commands' },
 ];
 
 export async function startBot() {
@@ -81,8 +90,14 @@ export async function startBot() {
         return continueCommand(interaction);
       case 'playnext':
         return playNextCommand(interaction);
+      case 'playshuffle':
+        return playShuffleCommand(interaction);
+      case 'help':
+        return helpCommand(interaction);
     }
   });
+
+  // await play.setToken({ spotify: { client_id: '...', client_secret: '...', refresh_token: '...', access_token: '...' } });
 
   await client.login(process.env.DISCORD_TOKEN);
 }

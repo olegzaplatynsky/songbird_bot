@@ -35,12 +35,27 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
   // Resolve Spotify/YouTube
   let tracks = [];
 
-  if (play.sp_validate(query) !== false) {
-    const spData = await play.spotify(query);
-    const yt = await play.search(`${spData.name} ${(spData as any).artists?.[0]?.name ?? ''}`, {
-      limit: 1,
-    });
-    if (yt[0]) tracks.push({ title: yt[0].title!, url: yt[0].url! });
+  const spType = play.sp_validate(query);
+  if (spType !== false) {
+    try {
+      const spData = await play.spotify(query);
+      // Normalise to an array of SpotifyTrack regardless of track/album/playlist
+      const spotifyTracks: { name: string; artists: { name: string }[] }[] =
+        spType === 'track' ? [spData as any] : await (spData as any).all_tracks();
+
+      const results = await Promise.allSettled(
+        spotifyTracks.map((t) =>
+          play.search(`${t.name} ${t.artists[0]?.name ?? ''}`, { limit: 1 })
+        )
+      );
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value[0]) {
+          tracks.push({ title: r.value[0].title!, url: r.value[0].url! });
+        }
+      }
+    } catch {
+      return interaction.editReply('Could not load Spotify content');
+    }
   } else if (query.startsWith('http://') || query.startsWith('https://')) {
     const normalizedUrl = query.replace('music.youtube.com', 'www.youtube.com');
     const isPlaylist = normalizedUrl.includes('list=') || normalizedUrl.includes('/playlist');
