@@ -4,9 +4,11 @@ import play from 'play-dl';
 import { youtubeDl } from 'youtube-dl-exec';
 import { queues } from '../music/queue.js';
 import { createPlayer, playNext } from '../music/player.js';
+import { getDisplayName } from '../config/nicknames.js';
 
 export async function playCommand(interaction: ChatInputCommandInteraction) {
   const query = interaction.options.getString('query', true);
+  const name = getDisplayName(interaction);
   const member = interaction.member as any;
 
   const voiceChannel = member.voice.channel;
@@ -85,7 +87,11 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
 
   queue.tracks.push(...tracks);
 
-  await interaction.editReply(tracks.length === 1 ? `Added **${tracks[0]!.title}** to queue` : `Added **${tracks.length} tracks** to queue`);
+  await interaction.editReply(
+    tracks.length === 1
+      ? `**${name}** added **${tracks[0]!.title}** to the queue`
+      : `**${name}** added **${tracks.length} tracks** to the queue`,
+  );
 
   if (!queue.playing) {
     playNext(interaction.guildId!).catch(console.error);

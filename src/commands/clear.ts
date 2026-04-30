@@ -1,4 +1,5 @@
 import { queues } from '../music/queue.js';
+import { getDisplayName } from '../config/nicknames.js';
 
 export function clearCommand(interaction: any) {
   const queue = queues.get(interaction.guildId);
@@ -9,5 +10,5 @@ export function clearCommand(interaction: any) {
   queue.skipHandled = true;
   queue.player.stop();
 
-  interaction.reply('Queue cleared');
+  interaction.reply(`**${getDisplayName(interaction)}** cleared the queue`);
 }

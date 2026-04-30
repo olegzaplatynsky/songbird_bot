@@ -1,4 +1,5 @@
 import { queues } from '../music/queue.js';
+import { getDisplayName } from '../config/nicknames.js';
 
 export function skipCommand(interaction: any) {
   const queue = queues.get(interaction.guildId);
@@ -10,5 +11,5 @@ export function skipCommand(interaction: any) {
   queue.skipHandled = true;
   queue.player.stop();
 
-  interaction.reply('Skipped');
+  interaction.reply(`**${getDisplayName(interaction)}** skipped the track`);
 }

@@ -1,4 +1,5 @@
 import { queues } from '../music/queue.js';
+import { getDisplayName } from '../config/nicknames.js';
 
 export function shuffleCommand(interaction: any) {
   const queue = queues.get(interaction.guildId);
@@ -13,5 +14,5 @@ export function shuffleCommand(interaction: any) {
   }
   queue.tracks = [current, ...rest];
 
-  interaction.reply(`Shuffled ${rest.length} tracks`);
+  interaction.reply(`**${getDisplayName(interaction)}** shuffled ${rest.length} tracks`);
 }

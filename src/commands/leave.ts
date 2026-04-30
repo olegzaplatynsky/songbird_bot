@@ -1,4 +1,5 @@
 import { queues } from '../music/queue.js';
+import { getDisplayName } from '../config/nicknames.js';
 
 export function leaveCommand(interaction: any) {
   const queue = queues.get(interaction.guildId);
@@ -7,5 +8,5 @@ export function leaveCommand(interaction: any) {
   queue.connection.destroy();
   queues.delete(interaction.guildId);
 
-  interaction.reply('Left channel');
+  interaction.reply(`**${getDisplayName(interaction)}** kicked me out`);
 }
