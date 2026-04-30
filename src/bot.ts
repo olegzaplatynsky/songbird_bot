@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, REST, Routes } from 'discord.js';
 import type { Interaction } from 'discord.js';
+import play from 'play-dl';
 import { playCommand } from './commands/play.js';
 import { pauseCommand } from './commands/pause.js';
 import { skipCommand } from './commands/skip.js';
@@ -12,33 +13,23 @@ import { continueCommand } from './commands/continue.js';
 import { playNextCommand } from './commands/playnext.js';
 import { playShuffleCommand } from './commands/playshuffle.js';
 import { helpCommand } from './commands/help.js';
-// import play from 'play-dl';
+
+// Autocomplete is enabled for these commands (the ones that accept a query).
+const QUERY_OPTION = { name: 'query', type: 3, required: true, autocomplete: true, description: 'Search query, YouTube URL, or Spotify link' };
 
 const commands = [
-  {
-    name: 'play',
-    description: 'Play music',
-    options: [{ name: 'query', type: 3, required: true, description: 'Search query or URL' }],
-  },
-  { name: 'pause', description: 'Pause music' },
-  { name: 'skip', description: 'Skip current track' },
-  { name: 'clear', description: 'Clear the queue and stop playback' },
-  { name: 'leave', description: 'Leave voice channel' },
-  { name: 'loop', description: 'Toggle loop for the current track' },
-  { name: 'queue', description: 'Show the current queue' },
-  { name: 'shuffle', description: 'Shuffle the queue' },
+  { name: 'play',        description: 'Play music',                                    options: [QUERY_OPTION] },
+  { name: 'playnext',    description: 'Add a track to play right after the current one', options: [QUERY_OPTION] },
+  { name: 'playshuffle', description: 'Add tracks shuffled to the end of the queue',    options: [QUERY_OPTION] },
+  { name: 'pause',    description: 'Pause music' },
   { name: 'continue', description: 'Resume paused playback' },
-  {
-    name: 'playnext',
-    description: 'Add a track to play right after the current one',
-    options: [{ name: 'query', type: 3, required: true, description: 'Search query or URL' }],
-  },
-  {
-    name: 'playshuffle',
-    description: 'Add tracks shuffled to the end of the queue',
-    options: [{ name: 'query', type: 3, required: true, description: 'Search query or URL' }],
-  },
-  { name: 'help', description: 'Show all available commands' },
+  { name: 'skip',     description: 'Skip current track' },
+  { name: 'loop',     description: 'Toggle loop for the current track' },
+  { name: 'queue',    description: 'Show the current queue' },
+  { name: 'shuffle',  description: 'Shuffle the queue' },
+  { name: 'clear',    description: 'Clear the queue and stop playback' },
+  { name: 'leave',    description: 'Leave voice channel' },
+  { name: 'help',     description: 'Show all available commands' },
 ];
 
 export async function startBot() {
@@ -47,57 +38,61 @@ export async function startBot() {
   });
 
   client.once('clientReady', async () => {
-  console.log(`Logged in as ${client.user?.tag}`);
+    console.log(`Logged in as ${client.user?.tag}`);
 
-  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);
 
-  const guilds = client.guilds.cache.map(g => g.id);
-
-  for (const guildId of guilds) {
-    await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID!,
-        guildId
-      ),
-      { body: commands }
-    );
-
-    console.log(`Commands registered for guild: ${guildId}`);
-  }
-  });
-
-  client.on('interactionCreate', async (interaction: Interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-
-    switch (interaction.commandName) {
-      case 'play':
-        return playCommand(interaction);
-      case 'pause':
-        return pauseCommand(interaction);
-      case 'skip':
-        return skipCommand(interaction);
-      case 'clear':
-        return clearCommand(interaction);
-      case 'leave':
-        return leaveCommand(interaction);
-      case 'loop':
-        return loopCommand(interaction);
-      case 'queue':
-        return queueCommand(interaction);
-      case 'shuffle':
-        return shuffleCommand(interaction);
-      case 'continue':
-        return continueCommand(interaction);
-      case 'playnext':
-        return playNextCommand(interaction);
-      case 'playshuffle':
-        return playShuffleCommand(interaction);
-      case 'help':
-        return helpCommand(interaction);
+    for (const guildId of client.guilds.cache.map(g => g.id)) {
+      await rest.put(
+        Routes.applicationGuildCommands(process.env.CLIENT_ID!, guildId),
+        { body: commands },
+      );
+      console.log(`Commands registered for guild: ${guildId}`);
     }
   });
 
-  // await play.setToken({ spotify: { client_id: '...', client_secret: '...', refresh_token: '...', access_token: '...' } });
+  client.on('interactionCreate', async (interaction: Interaction) => {
+    // ── Autocomplete ─────────────────────────────────────────────────────────
+    if (interaction.isAutocomplete()) {
+      const query = interaction.options.getFocused();
+
+      // Don't try to search URLs or very short strings
+      if (!query || query.startsWith('http://') || query.startsWith('https://') || query.length < 2) {
+        return interaction.respond([]);
+      }
+
+      try {
+        const results = await play.search(query, { limit: 10, source: { youtube: 'video' } });
+        await interaction.respond(
+          results.map(r => ({
+            name: (r.title ?? 'Unknown').slice(0, 100),
+            value: r.url,
+          }))
+        );
+      } catch {
+        await interaction.respond([]);
+      }
+      return;
+    }
+
+    // ── Slash commands ────────────────────────────────────────────────────────
+    if (!interaction.isChatInputCommand()) return;
+
+    switch (interaction.commandName) {
+      case 'play':        return playCommand(interaction);
+      case 'playnext':    return playNextCommand(interaction);
+      case 'playshuffle': return playShuffleCommand(interaction);
+      case 'pause':       return pauseCommand(interaction);
+      case 'continue':    return continueCommand(interaction);
+      case 'skip':        return skipCommand(interaction);
+      case 'loop':        return loopCommand(interaction);
+      case 'queue':       return queueCommand(interaction);
+      case 'shuffle':     return shuffleCommand(interaction);
+      case 'clear':       return clearCommand(interaction);
+      case 'leave':       return leaveCommand(interaction);
+      case 'help':        return helpCommand(interaction);
+    }
+  });
 
   await client.login(process.env.DISCORD_TOKEN);
 }
