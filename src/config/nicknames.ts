@@ -1,5 +1,5 @@
 export const nicknameAliases: Record<string, string> = {
-  'threedaws': 'Nazariy MILFrieren',
+  'threedaws': 'Nazariiy MILFrieren',
   'green_banana': 'Karaoke Banana',
   'fizenberg': 'Бодя найкращий',
   'dirudik': 'Dream on, Dream on, I dream on, Dream a little, I`ll dream on, Dream on, I dream on, I dream on',
