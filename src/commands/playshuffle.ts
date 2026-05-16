@@ -93,10 +93,13 @@ export async function playShuffleCommand(interaction: ChatInputCommandInteractio
 
   queue.tracks.push(...tracks);
 
+  const isQueryUrl = spType !== false || query.startsWith('http://') || query.startsWith('https://');
+  const singleUrl = isQueryUrl ? query : tracks[0]!.url;
+
   await interaction.editReply(
     tracks.length === 1
-      ? `**${name}** added **${tracks[0]!.title}** to the queue`
-      : `**${name}** added **${tracks.length} tracks** (shuffled) to the queue`,
+      ? `**${name}** added **[${tracks[0]!.title}](${singleUrl})** to the queue`
+      : `**${name}** added **[${tracks.length} tracks](${query})** (shuffled) to the queue`,
   );
 
   if (!queue.playing) {

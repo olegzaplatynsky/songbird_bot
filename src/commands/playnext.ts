@@ -88,10 +88,13 @@ export async function playNextCommand(interaction: ChatInputCommandInteraction) 
   // If the queue is empty this is equivalent to a normal push.
   queue.tracks.splice(1, 0, ...tracks);
 
+  const isQueryUrl = spType !== false || query.startsWith('http://') || query.startsWith('https://');
+  const singleUrl = isQueryUrl ? query : tracks[0]!.url;
+
   await interaction.editReply(
     tracks.length === 1
-      ? `**${name}** added **${tracks[0]!.title}** to play next`
-      : `**${name}** added **${tracks.length} tracks** to play next`,
+      ? `**${name}** added **[${tracks[0]!.title}](${singleUrl})** to play next`
+      : `**${name}** added **[${tracks.length} tracks](${query})** to play next`,
   );
 
   if (!queue.playing) {

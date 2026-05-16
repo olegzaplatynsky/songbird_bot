@@ -87,10 +87,15 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
 
   queue.tracks.push(...tracks);
 
+  // Link single tracks to their YouTube URL; playlists link back to the
+  // original pasted URL. Text searches resolve to the found YouTube URL.
+  const isQueryUrl = spType !== false || query.startsWith('http://') || query.startsWith('https://');
+  const singleUrl = isQueryUrl ? query : tracks[0]!.url;
+
   await interaction.editReply(
     tracks.length === 1
-      ? `**${name}** added **${tracks[0]!.title}** to the queue`
-      : `**${name}** added **${tracks.length} tracks** to the queue`,
+      ? `**${name}** added **[${tracks[0]!.title}](${singleUrl})** to the queue`
+      : `**${name}** added **[${tracks.length} tracks](${query})** to the queue`,
   );
 
   if (!queue.playing) {
