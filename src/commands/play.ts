@@ -55,7 +55,8 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
           tracks.push({ title: r.value[0].title!, url: r.value[0].url! });
         }
       }
-    } catch {
+    } catch (err) {
+      console.error(`Failed to load Spotify URL: ${query}`, err);
       return interaction.editReply('Could not load Spotify content');
     }
   } else if (query.startsWith('http://') || query.startsWith('https://')) {
@@ -69,11 +70,15 @@ export async function playCommand(interaction: ChatInputCommandInteraction) {
           const url = entry.webpage_url ?? entry.url;
           if (url) tracks.push({ title: entry.title ?? url, url });
         }
+      } else if (play.yt_validate(normalizedUrl) === 'video') {
+        const info = await play.video_basic_info(normalizedUrl);
+        tracks.push({ title: info.video_details.title ?? normalizedUrl, url: normalizedUrl });
       } else {
         const info = await youtubeDl(normalizedUrl, { dumpSingleJson: true, noWarnings: true, noPlaylist: true }) as { title?: string };
         tracks.push({ title: info.title ?? normalizedUrl, url: normalizedUrl });
       }
-    } catch {
+    } catch (err) {
+      console.error(`Failed to load URL: ${normalizedUrl}`, err);
       return interaction.editReply('Could not load that URL');
     }
   } else {
