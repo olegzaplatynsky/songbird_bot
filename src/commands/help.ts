@@ -11,6 +11,7 @@ export function helpCommand(interaction: any) {
     '**/shuffle** — Shuffle all queued tracks (keeps current track playing)',
     '**/clear** — Remove all tracks from the queue and stop playback',
     '**/leave** — Disconnect the bot from the voice channel',
+    '**/autoplay** — (Experimental) Toggle autoplay — queues a similar song automatically when the queue ends',
     '**/help** — Show this message',
   ].join('\n');
 

@@ -5,6 +5,7 @@ import {
   StreamType,
 } from '@discordjs/voice';
 import youtubedl from 'youtube-dl-exec';
+import play from 'play-dl';
 import { queues } from './queue.js';
 
 const IDLE_LEAVE_MS = 5 * 60 * 1000; // 5 minutes
@@ -18,6 +19,7 @@ export function createPlayer(guildId: string) {
 
     // If the track was already removed by skip/clear/error, don't shift again.
     if (!queue.skipHandled && !queue.loop) {
+      if (queue.tracks[0]) queue.lastTrack = queue.tracks[0];
       queue.tracks.shift();
     }
     queue.skipHandled = false;
@@ -44,9 +46,37 @@ export async function playNext(guildId: string) {
   if (!queue) return;
 
   if (queue.tracks.length === 0) {
-    queue.playing = false;
-    scheduleLeave(guildId);
-    return;
+    // Autoplay: find a YouTube video similar to the last played track and
+    // queue it automatically. Runs only once per empty-queue event so the
+    // bot doesn't spiral into infinite adds.
+    if (queue.autoplay && queue.lastTrack && queue.autoplayCount < queue.autoplayLimit) {
+      try {
+        const results = await play.search(queue.lastTrack.title, {
+          limit: 5,
+          source: { youtube: 'video' },
+        });
+        // Skip any result that is the same URL as the track we just finished.
+        const suggestion = results.find(r => r.url !== queue.lastTrack!.url);
+        if (suggestion?.title && suggestion?.url) {
+          queue.autoplayCount++;
+          console.log(`Autoplay (${queue.autoplayCount}/${queue.autoplayLimit}): queuing "${suggestion.title}"`);
+          queue.tracks.push({ title: suggestion.title, url: suggestion.url });
+          if (queue.autoplayCount >= queue.autoplayLimit) {
+            queue.autoplay = false;
+            console.log('Autoplay limit reached — disabling autoplay');
+          }
+          // Fall through — tracks is no longer empty so playback continues.
+        }
+      } catch (err) {
+        console.error('Autoplay search failed:', err);
+      }
+    }
+
+    if (queue.tracks.length === 0) {
+      queue.playing = false;
+      scheduleLeave(guildId);
+      return;
+    }
   }
 
   // Clear any pending idle leave timer since we're about to play.

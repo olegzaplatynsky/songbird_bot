@@ -14,7 +14,12 @@ export type GuildQueue = {
   // Set to true when the current track has already been removed so the Idle
   // handler knows not to shift() again (avoids double-shift on skip / clear).
   skipHandled: boolean;
+  autoplay: boolean;
+  autoplayLimit: number;
+  autoplayCount: number;
+  lastTrack?: Track;
   idleTimer?: NodeJS.Timeout;
+  aloneTimer?: NodeJS.Timeout;
 };
 
 export const queues = new Map<string, GuildQueue>();

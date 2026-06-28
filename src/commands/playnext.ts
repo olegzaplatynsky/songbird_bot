@@ -30,7 +30,7 @@ export async function playNextCommand(interaction: ChatInputCommandInteraction) 
     const player = createPlayer(interaction.guildId!);
     connection.subscribe(player);
 
-    queue = { connection, player, tracks: [], playing: false, loop: false, skipHandled: false };
+    queue = { connection, player, tracks: [], playing: false, loop: false, skipHandled: false, autoplay: false, autoplayLimit: 10, autoplayCount: 0 };
     queues.set(interaction.guildId!, queue);
   }
 
